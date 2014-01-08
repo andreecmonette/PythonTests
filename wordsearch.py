@@ -84,8 +84,15 @@ class Game(object):
 
 
 	def deleteLetter(self):
-		self.wordBuffer.pop()
-		self.words = self.wordBuffer[-1]
+
+		
+		if not self.wordBuffer == []:
+			self.wordBuffer.pop()
+			self.words = self.wordBuffer[-1]
+
+		else:
+			self.words = []
+
 		self.highlightWords()
 
 	def highlightWords(self):
@@ -101,6 +108,8 @@ class Game(object):
 					x,y = letter
 
 					self.gameWindow.chgat(x+1,y+1,1,curses.A_BOLD + curses.color_pair(1))
+			if self.selectedWord >= len(self.words):
+				self.selectedWord = 0
 			for letter in self.words[self.selectedWord]:
 				x,y = letter
 				self.gameWindow.chgat(x+1,y+1,1,curses.A_BOLD + curses.color_pair(2))
@@ -109,6 +118,7 @@ class Game(object):
 		self.selectedWord += 1
 		if self.selectedWord >= len(self.words):   #Something about preincrementing?
 			self.selectedWord = 0
+		self.highlightWords()
 
 def getRandChar():
 	return LOWERCASE[random.randrange(26)]
@@ -140,8 +150,9 @@ def main(screen, gameWidth = 40, gameHeight = 20):
 			if curKey == ' ':
 				game.deleteLetter()
 
-			if curKey == "\t":
+			if curKey == '\t':
 				game.nextSelection()
-				
+		if curKey == curses.KEY_BACKSPACE:
+			game.deleteLetter()
 if __name__ == "__main__":
 	curses.wrapper(main)
