@@ -19,14 +19,16 @@ def adjacent(coordTuple, width, height):
 
 
 class Game(object):
-	def __init__(self, screen, gameWindow, height, width):
+	def __init__(self, screen, gameWindow, infoWindow, height, width):
 		self.over = False
 		self.screen = screen
 		self.gameWindow = gameWindow
+		self.infoWindow = infoWindow
 		self.height = height-2
 		self.width = width-2
 		self.newBoard()
-	
+		self.scoredWords = []
+
 	def newBoard(self):
 		self.charLocs = {}
 		for letter in LOWERCASE:
@@ -39,13 +41,28 @@ class Game(object):
 				randChar = getRandChar()
 				self.squares[i].append(randChar)
 				self.charLocs[randChar].add((i,j))
-
 				self.gameWindow.addch(i+1,j+1, ord(randChar))
+
 		self.time = time.time()
 		self.words = []
 		self.selectedWord = 0
 		self.wordBuffer = []
 		self.currentWord = ''
+
+	def scoreWord(self):
+		self.scoredWords.append(self.currentWord)
+		for coords in self.words[self.selectedWord]:
+			x,y = coords
+		
+			self.replaceChar(x,y)
+		self.infoWindow.addstr(1,1,self.currentWord)
+		self.words = []
+		self.selectedWord = 0
+		self.wordBuffer = []
+		self.currentWord = ''
+		self.highlightWords()	
+		self.infoWindow.refresh()
+
 
 	def replaceChar(self, x, y):
 		newChar = getRandChar()
@@ -84,15 +101,14 @@ class Game(object):
 
 
 	def deleteLetter(self):
-
 		
-		if not self.wordBuffer == []:
+		if not 0 <= len(self.wordBuffer) <= 1:
 			self.wordBuffer.pop()
 			self.words = self.wordBuffer[-1]
 
-		else:
+		elif len(self.wordBuffer) == 1:
+			self.wordBuffer = []
 			self.words = []
-
 		self.highlightWords()
 
 	def highlightWords(self):
@@ -130,9 +146,14 @@ def main(screen, gameWidth = 40, gameHeight = 20):
 	curses.init_pair(1,curses.COLOR_YELLOW,curses.COLOR_BLACK)
 	curses.init_pair(2,curses.COLOR_RED,curses.COLOR_BLACK)
 	gameWindow = screen.subwin(finalWidth,finalHeight,0,0)
+
 	gameWindow.border()
-	game = Game(screen, gameWindow, finalHeight, finalWidth)
+	infoWindow = screen.subwin(20,finalHeight,0,finalWidth+2)
+	infoWindow.border()
+
+	game = Game(screen, gameWindow, infoWindow, finalHeight, finalWidth)
 	screen.nodelay(1)
+	curses.curs_set(0)
 
 	while not game.over:		
 		game.time = time.time()
@@ -148,10 +169,12 @@ def main(screen, gameWidth = 40, gameHeight = 20):
 				game.over = True
 
 			if curKey == ' ':
-				game.deleteLetter()
+				game.scoreWord()
 
 			if curKey == '\t':
 				game.nextSelection()
+
+
 		if curKey == curses.KEY_BACKSPACE:
 			game.deleteLetter()
 if __name__ == "__main__":
