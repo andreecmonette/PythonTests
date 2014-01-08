@@ -1,7 +1,8 @@
 import time, curses, random
 LOWERCASE = 'abcdefghijklmnopqrstuvwxyz'
 
-
+WORDSCORES = dict(zip(LOWERCASE,
+	[1,3,3,2,1,4,2,4,1,8,5,1,3,1,1,3,10,1,1,1,1,4,4,8,4,10]))
 
 
 def adjacent(coordTuple, width, height):
@@ -30,6 +31,8 @@ class Game(object):
 		self.scoredWords = []
 
 	def newBoard(self):
+		self.score = 0
+		self.infoWindow.addstr(1,1,str(self.score))
 		self.charLocs = {}
 		for letter in LOWERCASE:
 			self.charLocs[letter] = set()
@@ -51,17 +54,22 @@ class Game(object):
 
 	def scoreWord(self):
 		self.scoredWords.append(self.currentWord)
+		wordScore = 0
 		for coords in self.words[self.selectedWord]:
 			x,y = coords
-		
+			wordScore += WORDSCORES[self.squares[x][y]]
 			self.replaceChar(x,y)
-		self.infoWindow.addstr(1,1,self.currentWord)
+
+		self.score += wordScore
+		self.infoWindow.addstr(1,1,str(self.score))
+		self.infoWindow.addstr(2,1,self.currentWord)
 		self.words = []
 		self.selectedWord = 0
 		self.wordBuffer = []
 		self.currentWord = ''
 		self.highlightWords()	
 		self.infoWindow.refresh()
+		
 
 
 	def replaceChar(self, x, y):
