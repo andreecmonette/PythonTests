@@ -2,6 +2,8 @@ import time, curses, random
 LOWERCASE = 'abcdefghijklmnopqrstuvwxyz'
 
 
+
+
 def adjacent(coordTuple, width, height):
 	x,y = coordTuple
 	adjacentSet = set((x-1,y-1),(x,y-1),(x+1,y-1),(x-1,y),(x+1,y),(x-1,y+1),(x,y+1),(x+1,y+1))
@@ -42,6 +44,8 @@ class Game(object):
 		self.time = time.time()
 		self.words = []
 		self.selectedWord = 0
+		self.wordBuffer = []
+		self.currentWord = ''
 
 	def replaceChar(self, x, y):
 		newChar = getRandChar()
@@ -55,8 +59,36 @@ class Game(object):
 		self.newBoard()
 
 
+	def extendWord(self, letter):
+		if self.words == []:
+			for firstletter in self.charLocs[letter]:
+				self.words.append(list(firstletter))
+			self.wordBuffer.append(self.words)
+		else:
+			newWords = []
+			for word in self.words:
+				for nextLetter in adjacent(word,self.height,self.width).intersection(self.charLocs[letter]).difference(word):
+					newWords.append(word + list(nextLetter))
+			self.words = newWords
+			self.wordBuffer.append(self.words)		
+		self.currentWord = self.currentWord + letter
+		self.selectedWord = 0 # this should be whatever the index of the first returned word is
+		self.highlightWords()
 
-	def extendWord(self):
+	def deleteLetter(self):
+		self.wordBuffer.pop()
+		self.words = self.wordBuffer[-1]
+
+	def highlightWords(self):
+		for word in self.words:
+			for letter in word:
+				try:
+					x,y = letter
+				except:
+					raise RuntimeError(word)
+				self.gameWindow.chgat(x,y,1,curses.A_BOLD)
+		for letter in self.words[selectedWord]:
+			self.gameWindow.chgat(x,y,1,curses.color_pair(1))
 
 
 
@@ -67,7 +99,7 @@ def main(screen, gameWidth = 40, gameHeight = 20):
 	screen.clear()
 	scrWidth, scrHeight = screen.getmaxyx()
 	finalHeight, finalWidth = min(gameHeight, scrHeight-2), min(gameWidth,scrWidth-2)
-	curses.init_pair(1,2,3)
+	curses.init_pair(1,curses.COLOR_RED,curses.COLOR_WHITE)
 	gameWindow = screen.subwin(finalWidth,finalHeight,0,0)
 	gameWindow.border()
 	game = Game(screen, gameWindow, finalHeight, finalWidth)
@@ -81,10 +113,13 @@ def main(screen, gameWidth = 40, gameHeight = 20):
 		if 0 < curKey < 256:
 			curKey = chr(curKey)
 			if curKey in LOWERCASE:
+				game.extendWord(curKey)
 
+			if curKey == '0':
+				game.over = True
 
 			if curKey == ' ':
-				game.over = True
+				game.deleteLetter()
 
 if __name__ == "__main__":
 	curses.wrapper(main)
