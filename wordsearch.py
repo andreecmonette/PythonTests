@@ -6,7 +6,7 @@ LOWERCASE = 'abcdefghijklmnopqrstuvwxyz'
 
 def adjacent(coordTuple, width, height):
 	x,y = coordTuple
-	adjacentSet = set((x-1,y-1),(x,y-1),(x+1,y-1),(x-1,y),(x+1,y),(x-1,y+1),(x,y+1),(x+1,y+1))
+	adjacentSet = set([(x-1,y-1),(x,y-1),(x+1,y-1),(x-1,y),(x+1,y),(x-1,y+1),(x,y+1),(x+1,y+1)])
 	if x == 0:
 		adjacentSet.difference_update((x-1,y-1),(x-1,y),(x-1,y+1))
 	elif x == width:
@@ -62,35 +62,53 @@ class Game(object):
 	def extendWord(self, letter):
 		if self.words == []:
 			for firstletter in self.charLocs[letter]:
-				self.words.append(list(firstletter))
-			self.wordBuffer.append(self.words)
+				self.words.append([firstletter,])
+			if not self.words == []:	
+				self.wordBuffer.append(self.words)
+				self.currentWord = self.currentWord + letter
+				self.highlightWords()
 		else:
 			newWords = []
+	#		try:
 			for word in self.words:
-				for nextLetter in adjacent(word,self.height,self.width).intersection(self.charLocs[letter]).difference(word):
-					newWords.append(word + list(nextLetter))
-			self.words = newWords
-			self.wordBuffer.append(self.words)		
-		self.currentWord = self.currentWord + letter
+				for nextLetter in adjacent(word[-1],self.height,self.width).intersection(self.charLocs[letter]).difference(word):
+					newWords.append(word + [nextLetter,])
+	#		except:
+	#			raise RuntimeError(word)
+			if not newWords == []:
+				self.words = newWords
+				self.wordBuffer.append(self.words)	
+				self.currentWord = self.currentWord + letter
+				self.highlightWords()
 		self.selectedWord = 0 # this should be whatever the index of the first returned word is
-		self.highlightWords()
+
 
 	def deleteLetter(self):
 		self.wordBuffer.pop()
 		self.words = self.wordBuffer[-1]
+		self.highlightWords()
 
 	def highlightWords(self):
-		for word in self.words:
-			for letter in word:
-				try:
+		for i in xrange(self.width):
+			for j in xrange(self.height):
+				self.gameWindow.chgat(i+1,j+1, 1,curses.A_NORMAL)
+		if not self.words == []:
+
+
+			for word in self.words:
+				for letter in word:
+				
 					x,y = letter
-				except:
-					raise RuntimeError(word)
-				self.gameWindow.chgat(x,y,1,curses.A_BOLD)
-		for letter in self.words[selectedWord]:
-			self.gameWindow.chgat(x,y,1,curses.color_pair(1))
 
+					self.gameWindow.chgat(x+1,y+1,1,curses.A_BOLD + curses.color_pair(1))
+			for letter in self.words[self.selectedWord]:
+				x,y = letter
+				self.gameWindow.chgat(x+1,y+1,1,curses.A_BOLD + curses.color_pair(2))
 
+	def nextSelection(self):
+		self.selectedWord += 1
+		if self.selectedWord >= len(self.words):   #Something about preincrementing?
+			self.selectedWord = 0
 
 def getRandChar():
 	return LOWERCASE[random.randrange(26)]
@@ -99,7 +117,8 @@ def main(screen, gameWidth = 40, gameHeight = 20):
 	screen.clear()
 	scrWidth, scrHeight = screen.getmaxyx()
 	finalHeight, finalWidth = min(gameHeight, scrHeight-2), min(gameWidth,scrWidth-2)
-	curses.init_pair(1,curses.COLOR_RED,curses.COLOR_WHITE)
+	curses.init_pair(1,curses.COLOR_YELLOW,curses.COLOR_BLACK)
+	curses.init_pair(2,curses.COLOR_RED,curses.COLOR_BLACK)
 	gameWindow = screen.subwin(finalWidth,finalHeight,0,0)
 	gameWindow.border()
 	game = Game(screen, gameWindow, finalHeight, finalWidth)
@@ -121,5 +140,8 @@ def main(screen, gameWidth = 40, gameHeight = 20):
 			if curKey == ' ':
 				game.deleteLetter()
 
+			if curKey == "\t":
+				game.nextSelection()
+				
 if __name__ == "__main__":
 	curses.wrapper(main)
