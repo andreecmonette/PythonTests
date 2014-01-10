@@ -61,8 +61,10 @@ class Game(object):
 			self.replaceChar(x,y)
 
 		self.score += wordScore
+		infoX, infoY = self.infoWindow.getmaxyx()
 		self.infoWindow.addstr(1,1,str(self.score))
-		self.infoWindow.addstr(2,1,self.currentWord)
+		padding = ' '*(infoX-len(self.currentWord)-2)
+		self.infoWindow.addstr(2,1,self.currentWord + padding)
 		self.words = []
 		self.selectedWord = 0
 		self.wordBuffer = []
@@ -117,7 +119,12 @@ class Game(object):
 		elif len(self.wordBuffer) == 1:
 			self.wordBuffer = []
 			self.words = []
+			
+		if not self.currentWord == '':
+			self.currentWord.pop()
+
 		self.highlightWords()
+
 
 	def highlightWords(self):
 		for i in xrange(self.width):
