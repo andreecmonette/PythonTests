@@ -121,7 +121,7 @@ class Game(object):
 			self.words = []
 			
 		if not self.currentWord == '':
-			self.currentWord.pop()
+			self.currentWord = self.currentWord[:-1]
 
 		self.highlightWords()
 
